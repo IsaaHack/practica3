@@ -6,6 +6,7 @@ const double gana = masinf - 1, pierde = menosinf + 1;
 const int num_pieces = 3;
 const int PROFUNDIDAD_MINIMAX = 4;  // Umbral maximo de profundidad para el metodo MiniMax
 const int PROFUNDIDAD_ALFABETA = 6; // Umbral maximo de profundidad para la poda Alfa_Beta
+int podas = 0;
 
 bool AIPlayer::move(){
     cout << "Realizo un movimiento automatico" << endl;
@@ -22,6 +23,8 @@ bool AIPlayer::move(){
 }
 
 void AIPlayer::think(color & c_piece, int & id_piece, int & dice) const{
+    // Tutorial
+    /**
     switch (id)
     {
     case 0:
@@ -40,15 +43,18 @@ void AIPlayer::think(color & c_piece, int & id_piece, int & dice) const{
         thinkMejorOpcion(c_piece, id_piece, dice);
         break;
     }
+    */
 
-    /*
+    
     // El siguiente código se proporciona como sugerencia para iniciar la implementación del agente.
 
     double valor; // Almacena el valor con el que se etiqueta el estado tras el proceso de busqueda.
     double alpha = menosinf, beta = masinf; // Cotas iniciales de la poda AlfaBeta
     // Llamada a la función para la poda (los parámetros son solo una sugerencia, se pueden modificar).
-    valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, ValoracionTest);
-    cout << "Valor MiniMax: " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
+    //valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_MINIMAX-1, c_piece, id_piece, dice, alpha, beta, ValoracionTest);
+    
+    //valor = MiniMax(*actual, jugador, 0, PROFUNDIDAD_MINIMAX-1, c_piece, id_piece, dice, ValoracionTest);
+    //cout << "Valor MiniMax: " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
 
     // ----------------------------------------------------------------- //
 
@@ -58,15 +64,15 @@ void AIPlayer::think(color & c_piece, int & id_piece, int & dice) const{
             valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, ValoracionTest);
             break;
         case 1:
-            valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion1);
+            //valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion1);
             break;
         case 2:
-            valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion2);
+            //valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion2);
             break;
     }
-    cout << "Valor MiniMax: " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
-
-    */
+    cout << "Valor AlfaBeta: MIO " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
+    cout << "Podas: " << podas << endl;
+    //cout << "Valor MiniMax: " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
 }
 
 void AIPlayer::thinkAleatorio(color & c_piece, int & id_piece, int & dice) const{
@@ -264,9 +270,107 @@ void AIPlayer::thinkMejorOpcion(color & c_piece, int & id_piece, int & dice) con
 }
 
 double AIPlayer::Poda_AlfaBeta(const Parchis &actual, int jugador, int profundidad, int profundidad_max, color &c_piece, int &id_piece, int &dice, double alpha, double beta, double (*heuristic)(const Parchis &, int)) const{
-    
+    if(profundidad == profundidad_max || actual.gameOver()){
+        return heuristic(actual, jugador);
+    }
+
+    bool maximizar = actual.getCurrentPlayerId() == jugador;
+    bool es_raiz = profundidad == 0;
+    ParchisBros acciones = actual.getChildren();
+    double valor;
+
+    for(auto accion = acciones.begin(); accion != acciones.end(); ++accion){
+        
+        valor = Poda_AlfaBeta(*accion, jugador, profundidad+1, profundidad_max, c_piece, id_piece, dice, alpha, beta, heuristic);
+        
+        if(maximizar){//MAX
+            if (valor > alpha){
+                alpha = valor;
+
+                if(es_raiz){
+                    c_piece = accion.getMovedColor();
+                    id_piece = accion.getMovedPieceId();
+                    dice = accion.getMovedDiceValue();
+                }
+                
+            }
+            if(alpha >= beta){//Poda
+                podas++;
+                return beta;
+            }
+            
+        }else{//MIN
+            if (valor < beta){
+                beta = valor;
+
+                /**
+                if(es_raiz){
+                    c_piece = accion.getMovedColor();
+                    id_piece = accion.getMovedPieceId();
+                    dice = accion.getMovedDiceValue();
+                }
+                */
+            }
+            if(alpha >= beta){//Poda
+                podas++;
+                return alpha;
+            }
+        }
+    }
+
+    //Ha llegado al final del for, por lo que no ha podido podar
+    if(maximizar){//MAX
+        return alpha;
+    }else{//MIN
+        return beta;
+    }
 }
 
+double AIPlayer::MiniMax(const Parchis &actual, int jugador, int profundidad, int profundidad_max, color &c_piece, int &id_piece, int &dice, double (*heuristic)(const Parchis &, int)) const{
+    if(profundidad == profundidad_max || actual.gameOver()){
+        return heuristic(actual, jugador);
+    }
+
+    double valor_nodo;
+    bool maximizar = actual.getCurrentPlayerId() == jugador;
+    bool es_raiz = profundidad == 0;
+    ParchisBros acciones = actual.getChildren();
+    if(actual.getCurrentPlayerId() == jugador){
+        valor_nodo = menosinf;
+    }else{
+        valor_nodo = masinf;
+    }
+
+    for(auto accion = acciones.begin(); accion != acciones.end(); ++accion){
+        
+        double valor = MiniMax(*accion, jugador, profundidad+1, profundidad_max, c_piece, id_piece, dice, heuristic);
+        if(maximizar){//MAX
+            if(valor_nodo < valor){
+                valor_nodo = valor;
+
+                if(es_raiz){
+                    c_piece = accion.getMovedColor();
+                    id_piece = accion.getMovedPieceId();
+                    dice = accion.getMovedDiceValue();
+                }
+            }
+        }else{//MIN
+            if(valor_nodo > valor){
+                valor_nodo = valor;
+
+                /**
+                if(es_raiz){
+                    c_piece = accion.getMovedColor();
+                    id_piece = accion.getMovedPieceId();
+                    dice = accion.getMovedDiceValue();
+                }
+                */
+            }
+        }
+    }
+
+    return valor_nodo;
+}
 
 double AIPlayer::ValoracionTest(const Parchis &estado, int jugador)
 {
@@ -338,3 +442,43 @@ double AIPlayer::ValoracionTest(const Parchis &estado, int jugador)
     }
 }
 
+double AIPlayer::MiValoracion1(const Parchis &estado, int jugador){
+    int ganador = estado.getWinner();
+    int oponente = (jugador+1) % 2;
+
+    // Si hay un ganador, devuelvo más/menos infinito, según si he ganado yo o el oponente.
+    if (ganador == jugador){
+        return gana;
+    }else if (ganador == oponente){
+        return pierde;
+    }else{
+        // Colores que juega mi jugador y colores del oponente
+        vector<color> my_colors = estado.getPlayerColors(jugador);
+        vector<color> op_colors = estado.getPlayerColors(oponente);
+
+        // Recorro todas las fichas de mi jugador
+        int puntuacion_jugador = 0;
+        // Recorro colores de mi jugador.
+        for (int i = 0; i < my_colors.size(); i++){
+            color c = my_colors[i];
+            // Recorro las fichas de ese color.
+            for (int j = 0; j < num_pieces; j++){
+                //TO DO: Implementar
+            }
+        }
+
+        // Recorro todas las fichas del oponente
+        int puntuacion_oponente = 0;
+        // Recorro colores del oponente.
+        for (int i = 0; i < op_colors.size(); i++){
+            color c = op_colors[i];
+            // Recorro las fichas de ese color.
+            for (int j = 0; j < num_pieces; j++){
+                //TO DO: Implementar
+            }
+        }
+
+        // Devuelvo la puntuación de mi jugador menos la puntuación del oponente.
+        return puntuacion_jugador - puntuacion_oponente;
+    }
+}
