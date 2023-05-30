@@ -81,6 +81,8 @@ class AIPlayer: public Player{
 
         static double MiValoracion1(const Parchis &estado, int jugador);
 
+        static double MiValoracion2(const Parchis &estado, int jugador);
+
         /**
          * @brief Propuesta de declaración de la función poda alfa-beta.
          * La propuesta es solo sugerencia, los parámetros de la declaración podrían variar.
