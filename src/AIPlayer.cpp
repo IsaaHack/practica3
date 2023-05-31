@@ -6,7 +6,7 @@ const double gana = masinf - 1, pierde = menosinf + 1;
 const int num_pieces = 3;
 const int PROFUNDIDAD_MINIMAX = 4;  // Umbral maximo de profundidad para el metodo MiniMax
 const int PROFUNDIDAD_ALFABETA = 6; // Umbral maximo de profundidad para la poda Alfa_Beta
-int podas = 0;
+//int podas = 0;
 
 bool AIPlayer::move(){
     cout << "Realizo un movimiento automatico" << endl;
@@ -69,10 +69,13 @@ void AIPlayer::think(color & c_piece, int & id_piece, int & dice) const{
         case 2:
             valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion2);
             break;
+        case 3:
+            valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion3);
+            break;
     }
     cout << "Valor AlfaBeta: MIO " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
-    cout << "Podas: " << podas << endl;
-    podas = 0;
+    //cout << "Podas: " << podas << endl;
+    //podas = 0;
     //cout << "Valor MiniMax: " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
 }
 
@@ -296,7 +299,7 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &actual, int jugador, int profundid
                 
             }
             if(alpha >= beta){//Poda
-                podas++;
+                //podas++;
                 return beta;
             }
             
@@ -313,7 +316,7 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &actual, int jugador, int profundid
                 */
             }
             if(alpha >= beta){//Poda
-                podas++;
+                //podas++;
                 return alpha;
             }
         }
@@ -687,6 +690,219 @@ double AIPlayer::MiValoracion2(const Parchis &estado, int jugador){
                     break;
                 }
             }
+        }
+
+        // Devuelvo la puntuación de mi jugador menos la puntuación del oponente.
+        return puntuacion_jugador - puntuacion_oponente;
+    }
+}
+
+double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
+    int ganador = estado.getWinner();
+    int oponente = (jugador+1) % 2;
+
+    // Si hay un ganador, devuelvo más/menos infinito, según si he ganado yo o el oponente.
+    if (ganador == jugador){
+        return gana;
+    }else if (ganador == oponente){
+        return pierde;
+    }if(estado.isEatingMove()){
+        return -100;
+
+    }else{
+        // Colores que juega mi jugador y colores del oponente
+        vector<color> my_colors = estado.getPlayerColors(jugador);
+        vector<color> op_colors = estado.getPlayerColors(oponente);
+        vector<int> my_dices = estado.getAllAvailableDices(jugador);
+        vector<int> op_dices = estado.getAllAvailableDices(oponente);
+        int mi_ficha_mas_adelantada = 0;
+        int op_ficha_mas_adelantada = 0;
+
+        // Recorro todas las fichas de mi jugador
+        int puntuacion_jugador = 0;
+        vector<int> distancias_color = {0,0};
+        // Recorro colores de mi jugador.
+        for (int i = 0; i < my_colors.size(); i++){
+            color c = my_colors[i];
+            // Recorro las fichas de ese color.
+            for (int j = 0; j < num_pieces; j++){
+                if(estado.getBoard().getPiece(c, j).get_box().type == home){
+                    puntuacion_jugador -= 20;
+                }else if(estado.getBoard().getPiece(c, j).get_box().type == final_queue){
+                    puntuacion_jugador += 10;
+                }else if(estado.getBoard().getPiece(c, j).get_box().type == goal){
+                    puntuacion_jugador += 20;
+                }
+
+                if(estado.isSafePiece(c, j)){
+                    puntuacion_jugador += 5;
+                }
+
+                if(estado.goalBounce()){
+                    puntuacion_jugador -= 5;
+                }
+
+                int distancia_ficha = 74 - estado.distanceToGoal(c, j);
+
+                if(distancia_ficha > mi_ficha_mas_adelantada){
+                    mi_ficha_mas_adelantada = distancia_ficha;
+                }
+
+                distancias_color[i] += distancia_ficha*distancia_ficha;
+            }
+        }
+
+        if(distancias_color[0] <= distancias_color[1]){
+            puntuacion_jugador += (int)sqrt(distancias_color[1]);
+        }else{
+            puntuacion_jugador += (int)sqrt(distancias_color[0]);
+        }
+
+        // Recorro todas las fichas del oponente
+        int puntuacion_oponente = 0;
+        distancias_color = {0,0};
+        // Recorro colores del oponente.
+        for (int i = 0; i < op_colors.size(); i++){
+            color c = op_colors[i];
+            // Recorro las fichas de ese color.
+            for (int j = 0; j < num_pieces; j++){
+                if(estado.getBoard().getPiece(c, j).get_box().type == home){
+                    puntuacion_oponente -= 20;
+                }else if(estado.getBoard().getPiece(c, j).get_box().type == final_queue){
+                    puntuacion_oponente += 10;
+                }else if(estado.getBoard().getPiece(c, j).get_box().type == goal){
+                    puntuacion_oponente += 20;
+                }
+
+                if(estado.isSafePiece(c, j)){
+                    puntuacion_oponente += 5;
+                }
+
+                if(estado.goalBounce()){
+                    puntuacion_oponente -= 5;
+                }
+
+                int distancia_ficha = 74 - estado.distanceToGoal(c, j);
+
+                if(distancia_ficha > op_ficha_mas_adelantada){
+                    op_ficha_mas_adelantada = distancia_ficha;
+                }
+
+                distancias_color[i] += distancia_ficha*distancia_ficha;
+            }
+        }
+
+        if(distancias_color[0] <= distancias_color[1]){
+            puntuacion_oponente += (int)(sqrt(distancias_color[1]));
+            //puntuacion_oponente += (int)sqrt(distancias_color[0]);
+        }else{
+            puntuacion_oponente += (int)sqrt(distancias_color[0]);
+            //puntuacion_oponente += (int)(sqrt(distancias_color[1]));
+        }
+
+        for(int i = 0; i < my_dices.size(); i++){
+            if(my_dices[i] > 100)
+            switch (my_dices[i])
+            {
+            case star:
+                puntuacion_jugador += 30;
+                break;
+
+            case boo:
+                puntuacion_jugador += 20;
+                break;
+
+            case bullet:
+                puntuacion_jugador += 40;
+                break;
+
+            case red_shell:
+                puntuacion_jugador += 20;
+                break;
+
+            case blue_shell:
+                if(op_ficha_mas_adelantada > 50)
+                    puntuacion_jugador += op_ficha_mas_adelantada + 10;
+                else
+                    puntuacion_jugador += 10;
+                break;
+
+            case mushroom:
+                puntuacion_jugador += 8;
+                break;
+
+            case mega_mushroom:
+                puntuacion_jugador += 20;
+                break; 
+
+            case shock:
+                puntuacion_jugador += 7;
+                break;
+
+            case horn:
+                puntuacion_jugador += 15;
+                break;
+
+            case banana:
+                puntuacion_jugador += 6;
+                break;
+            
+            default:
+                break;
+            }
+            
+        }
+
+        for(int i = 0; i < op_dices.size(); ++i){
+            if(op_dices[i] > 100)
+                switch (op_dices[i])
+                {
+                case star:
+                    puntuacion_oponente += 30;
+                    break;
+
+                case boo:
+                    puntuacion_oponente += 20;
+                    break;
+
+                case bullet:
+                    puntuacion_oponente += 40;
+                    break;
+
+                case red_shell:
+                    puntuacion_oponente += 20;
+                    break;
+
+                case blue_shell:
+                    if(mi_ficha_mas_adelantada > 50)
+                        puntuacion_oponente += mi_ficha_mas_adelantada + 10;
+                    else
+                        puntuacion_oponente += 10;
+                    break;
+
+                case mushroom:
+                    puntuacion_oponente += 8;
+                    break;
+
+                case mega_mushroom:
+                    puntuacion_oponente += 20;
+                    break; 
+
+                case shock:
+                    puntuacion_oponente += 7;
+                    break;
+
+                case horn:
+                    puntuacion_oponente += 15;
+                    break;
+
+                case banana:
+                    puntuacion_oponente += 6;
+                    break;
+                
+                default:
+                    break;
+                }
         }
 
         // Devuelvo la puntuación de mi jugador menos la puntuación del oponente.
