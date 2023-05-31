@@ -753,9 +753,9 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
         }
 
         if(distancias_color[0] <= distancias_color[1]){
-            puntuacion_jugador += (int)sqrt(distancias_color[1]);
+            puntuacion_jugador += (int)(sqrt(distancias_color[1]));
         }else{
-            puntuacion_jugador += (int)sqrt(distancias_color[0]);
+            puntuacion_jugador += (int)(sqrt(distancias_color[0]));
         }
 
         // Recorro todas las fichas del oponente
@@ -769,7 +769,7 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
                 if(estado.getBoard().getPiece(c, j).get_box().type == home){
                     puntuacion_oponente -= 20;
                 }else if(estado.getBoard().getPiece(c, j).get_box().type == final_queue){
-                    puntuacion_oponente += 10;
+                    //puntuacion_oponente += 10;
                 }else if(estado.getBoard().getPiece(c, j).get_box().type == goal){
                     puntuacion_oponente += 20;
                 }
@@ -793,11 +793,11 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
         }
 
         if(distancias_color[0] <= distancias_color[1]){
-            puntuacion_oponente += (int)(sqrt(distancias_color[1]));
-            //puntuacion_oponente += (int)sqrt(distancias_color[0]);
-        }else{
+            puntuacion_oponente += (int)(sqrt(distancias_color[1]))*2;
             puntuacion_oponente += (int)sqrt(distancias_color[0]);
-            //puntuacion_oponente += (int)(sqrt(distancias_color[1]));
+        }else{
+            puntuacion_oponente += (int)(sqrt(distancias_color[0]))*2;
+            puntuacion_oponente += (int)(sqrt(distancias_color[1]));
         }
 
         for(int i = 0; i < my_dices.size(); i++){
@@ -822,7 +822,7 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
 
             case blue_shell:
                 if(op_ficha_mas_adelantada > 50)
-                    puntuacion_jugador += op_ficha_mas_adelantada + 10;
+                    puntuacion_jugador += op_ficha_mas_adelantada;
                 else
                     puntuacion_jugador += 10;
                 break;
@@ -832,7 +832,7 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
                 break;
 
             case mega_mushroom:
-                puntuacion_jugador += 20;
+                puntuacion_jugador += 12;
                 break; 
 
             case shock:
@@ -875,7 +875,7 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
 
                 case blue_shell:
                     if(mi_ficha_mas_adelantada > 50)
-                        puntuacion_oponente += mi_ficha_mas_adelantada + 10;
+                        puntuacion_oponente += mi_ficha_mas_adelantada;
                     else
                         puntuacion_oponente += 10;
                     break;
@@ -885,7 +885,7 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
                     break;
 
                 case mega_mushroom:
-                    puntuacion_oponente += 20;
+                    puntuacion_oponente += 12;
                     break; 
 
                 case shock:
