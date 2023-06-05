@@ -6,7 +6,6 @@ const double gana = masinf - 1, pierde = menosinf + 1;
 const int num_pieces = 3;
 const int PROFUNDIDAD_MINIMAX = 4;  // Umbral maximo de profundidad para el metodo MiniMax
 const int PROFUNDIDAD_ALFABETA = 6; // Umbral maximo de profundidad para la poda Alfa_Beta
-//int podas = 0;
 
 bool AIPlayer::move(){
     cout << "Realizo un movimiento automatico" << endl;
@@ -50,11 +49,6 @@ void AIPlayer::think(color & c_piece, int & id_piece, int & dice) const{
 
     double valor; // Almacena el valor con el que se etiqueta el estado tras el proceso de busqueda.
     double alpha = menosinf, beta = masinf; // Cotas iniciales de la poda AlfaBeta
-    // Llamada a la función para la poda (los parámetros son solo una sugerencia, se pueden modificar).
-    //valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_MINIMAX-1, c_piece, id_piece, dice, alpha, beta, ValoracionTest);
-    
-    //valor = MiniMax(*actual, jugador, 0, PROFUNDIDAD_MINIMAX-1, c_piece, id_piece, dice, ValoracionTest);
-    //cout << "Valor MiniMax: " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
 
     // ----------------------------------------------------------------- //
 
@@ -72,11 +66,11 @@ void AIPlayer::think(color & c_piece, int & id_piece, int & dice) const{
         case 3:
             valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion3);
             break;
+        case 4:
+            valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion4);
+            break;
     }
     cout << "Valor AlfaBeta: MIO " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
-    //cout << "Podas: " << podas << endl;
-    //podas = 0;
-    //cout << "Valor MiniMax: " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
 }
 
 void AIPlayer::thinkAleatorio(color & c_piece, int & id_piece, int & dice) const{
@@ -299,7 +293,6 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &actual, int jugador, int profundid
                 
             }
             if(alpha >= beta){//Poda
-                //podas++;
                 return beta;
             }
             
@@ -316,7 +309,6 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &actual, int jugador, int profundid
                 */
             }
             if(alpha >= beta){//Poda
-                //podas++;
                 return alpha;
             }
         }
@@ -769,7 +761,7 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
                 if(estado.getBoard().getPiece(c, j).get_box().type == home){
                     puntuacion_oponente -= 20;
                 }else if(estado.getBoard().getPiece(c, j).get_box().type == final_queue){
-                    //puntuacion_oponente += 10;
+                    puntuacion_oponente += 10;
                 }else if(estado.getBoard().getPiece(c, j).get_box().type == goal){
                     puntuacion_oponente += 20;
                 }
@@ -904,6 +896,168 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
                     break;
                 }
         }
+
+        // Devuelvo la puntuación de mi jugador menos la puntuación del oponente.
+        return puntuacion_jugador - puntuacion_oponente;
+    }
+}
+
+int recorrerFichas(const Parchis &estado, const vector<color> &fichas, const pair<color, int> &ficha_comida, int &ficha_adelantada, vector<int> &distancias_al_cuadrado){
+    int puntuacion_jugador = 0;
+    // Recorro colores de mi jugador.
+    for (int i = 0; i < fichas.size(); i++){
+        color c = fichas[i];
+        // Recorro las fichas de ese color.
+        for (int j = 0; j < num_pieces; j++){
+
+            auto box = estado.getBoard().getPiece(c, j).get_box();//Casilla en la que esta la ficha
+            if(box.type == home){//Esta en casa
+                puntuacion_jugador -= 20;
+            }else if(box.type == final_queue){//Esta en la cola final
+                puntuacion_jugador += 10;
+            }else if(box.type == goal){//Esta en la meta
+                puntuacion_jugador += 20;
+            }
+
+            if(estado.isSafePiece(c, j)){//Esta en una casilla segura
+                puntuacion_jugador += 5;
+            }
+
+            if(estado.isWall(box) || estado.isMegaWall(box)){//Esta haciendo barrera
+                puntuacion_jugador += 2;
+            }
+
+            if(estado.goalBounce()){//Esta haciendo rebote
+                puntuacion_jugador -= 5;
+            }
+
+            if(ficha_comida == pair<color, int>{c, j}){//Es la ficha comida
+                puntuacion_jugador -= 10;
+            }
+
+            int distancia_ficha = 74 - estado.distanceToGoal(c, j);//Distancia recorrida por la ficha
+
+            if(distancia_ficha > ficha_adelantada){//Es la ficha mas adelantada
+                ficha_adelantada = distancia_ficha;
+            }
+
+            distancias_al_cuadrado[i] += distancia_ficha*distancia_ficha;//Sumo la distancia al cuadrado de la ficha
+        }
+    }
+
+    return puntuacion_jugador;
+}
+
+int MiValoracionFichasEspeciales(const vector<int> &my_dices, const int &op_ficha_mas_adelantada){
+    int puntuacion_jugador = 0;
+
+    for(int i = 0; i < my_dices.size(); i++){
+        if(my_dices[i] > 100)
+        switch (my_dices[i])
+        {
+        case star:
+            puntuacion_jugador += 30;
+            break;
+
+        case boo:
+            puntuacion_jugador += 20;
+            break;
+
+        case bullet:
+            puntuacion_jugador += 40;
+            break;
+
+        case red_shell:
+            puntuacion_jugador += 20;
+            break;
+
+        case blue_shell:
+            if(op_ficha_mas_adelantada > 50)
+                puntuacion_jugador += op_ficha_mas_adelantada;
+            else
+                puntuacion_jugador += 10;
+            break;
+
+        case mushroom:
+            puntuacion_jugador += 8;
+            break;
+
+        case mega_mushroom:
+            puntuacion_jugador += 12;
+            break; 
+
+        case shock:
+            puntuacion_jugador += 7;
+            break;
+
+        case horn:
+            puntuacion_jugador += 15;
+            break;
+
+        case banana:
+            puntuacion_jugador += 6;
+            break;
+        
+        default:
+            break;
+        }
+        
+    }
+
+    return puntuacion_jugador;
+}
+
+double AIPlayer::MiValoracion4(const Parchis &estado, int jugador){
+    int ganador = estado.getWinner();
+    int oponente = (jugador+1) % 2;
+
+    // Si hay un ganador, devuelvo más/menos infinito, según si he ganado yo o el oponente.
+    if (ganador == jugador){
+        return gana;
+    }else if (ganador == oponente){
+        return pierde;
+    }else{
+        // Colores que juega mi jugador y colores del oponente
+        vector<color> my_colors = estado.getPlayerColors(jugador);
+        vector<color> op_colors = estado.getPlayerColors(oponente);
+        // Dados disponibles de mi jugador y del oponente
+        vector<int> my_dices = estado.getAllAvailableDices(jugador);
+        vector<int> op_dices = estado.getAllAvailableDices(oponente);
+        auto piezaComida = estado.eatenPiece();// Ficha comida
+
+        // Recorro todas las fichas de mi jugador
+        int puntuacion_jugador = 0;
+        int mi_ficha_mas_adelantada = 0;
+        vector<int> distancias_color = {0,0};
+
+        puntuacion_jugador += recorrerFichas(estado, my_colors, piezaComida, mi_ficha_mas_adelantada, distancias_color);
+
+        // Distancia mi color más adelantado
+        if(distancias_color[0] <= distancias_color[1]){
+            puntuacion_jugador += (int)(sqrt(distancias_color[1]));
+        }else{
+            puntuacion_jugador += (int)(sqrt(distancias_color[0]));
+        }
+
+        // Recorro todas las fichas del oponente
+        int puntuacion_oponente = 0;
+        int op_ficha_mas_adelantada = 0;
+        distancias_color = {0,0};
+
+        puntuacion_oponente += recorrerFichas(estado, op_colors, piezaComida, op_ficha_mas_adelantada, distancias_color);
+
+        // Distancia oponente
+        if(distancias_color[0] <= distancias_color[1]){
+            puntuacion_oponente += (int)(sqrt(distancias_color[1]))*2;
+            puntuacion_oponente += (int)sqrt(distancias_color[0]);
+        }else{
+            puntuacion_oponente += (int)(sqrt(distancias_color[0]))*2;
+            puntuacion_oponente += (int)(sqrt(distancias_color[1]));
+        }
+
+        // Valoración de las fichas especiales
+        puntuacion_jugador += MiValoracionFichasEspeciales(my_dices, op_ficha_mas_adelantada);
+        puntuacion_oponente += MiValoracionFichasEspeciales(op_dices, mi_ficha_mas_adelantada);
 
         // Devuelvo la puntuación de mi jugador menos la puntuación del oponente.
         return puntuacion_jugador - puntuacion_oponente;
