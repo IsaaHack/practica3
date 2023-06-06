@@ -902,7 +902,7 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
     }
 }
 
-int recorrerFichas(const Parchis &estado, const vector<color> &fichas, const pair<color, int> &ficha_comida, int &ficha_adelantada, vector<int> &distancias_al_cuadrado){
+int recorrerFichas(const Parchis &estado, const vector<color> &fichas, const pair<color, int> &ficha_comida, int &ficha_adelantada, int *distancias_al_cuadrado){
     int puntuacion_jugador = 0;
     // Recorro colores de mi jugador.
     for (int i = 0; i < fichas.size(); i++){
@@ -923,7 +923,7 @@ int recorrerFichas(const Parchis &estado, const vector<color> &fichas, const pai
                 puntuacion_jugador += 5;
             }
 
-            if(estado.isWall(box) || estado.isMegaWall(box)){//Esta haciendo barrera
+            if(estado.isWall(box)){//Esta haciendo barrera
                 puntuacion_jugador += 2;
             }
 
@@ -952,7 +952,6 @@ int MiValoracionFichasEspeciales(const vector<int> &my_dices, const int &op_fich
     int puntuacion_jugador = 0;
 
     for(int i = 0; i < my_dices.size(); i++){
-        if(my_dices[i] > 100)
         switch (my_dices[i])
         {
         case star:
@@ -1021,14 +1020,14 @@ double AIPlayer::MiValoracion4(const Parchis &estado, int jugador){
         vector<color> my_colors = estado.getPlayerColors(jugador);
         vector<color> op_colors = estado.getPlayerColors(oponente);
         // Dados disponibles de mi jugador y del oponente
-        vector<int> my_dices = estado.getAllAvailableDices(jugador);
-        vector<int> op_dices = estado.getAllAvailableDices(oponente);
+        vector<int> my_dices = estado.getAvailableSpecialDices(jugador);
+        vector<int> op_dices = estado.getAvailableSpecialDices(oponente);
         auto piezaComida = estado.eatenPiece();// Ficha comida
 
         // Recorro todas las fichas de mi jugador
         int puntuacion_jugador = 0;
         int mi_ficha_mas_adelantada = 0;
-        vector<int> distancias_color = {0,0};
+        int distancias_color[2] = {0,0};
 
         puntuacion_jugador += recorrerFichas(estado, my_colors, piezaComida, mi_ficha_mas_adelantada, distancias_color);
 
@@ -1042,7 +1041,7 @@ double AIPlayer::MiValoracion4(const Parchis &estado, int jugador){
         // Recorro todas las fichas del oponente
         int puntuacion_oponente = 0;
         int op_ficha_mas_adelantada = 0;
-        distancias_color = {0,0};
+        distancias_color[0] = distancias_color[1] = 0;
 
         puntuacion_oponente += recorrerFichas(estado, op_colors, piezaComida, op_ficha_mas_adelantada, distancias_color);
 
