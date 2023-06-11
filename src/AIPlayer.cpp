@@ -272,9 +272,9 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &actual, int jugador, int profundid
         return heuristic(actual, jugador);
     }
 
-    bool maximizar = actual.getCurrentPlayerId() == jugador;
-    bool es_raiz = profundidad == 0;
-    ParchisBros acciones = actual.getChildren();
+    bool maximizar = actual.getCurrentPlayerId() == jugador;//Es el jugador que tiene el turno
+    bool es_raiz = profundidad == 0;//Es el nodo raiz
+    ParchisBros acciones = actual.getChildren();///Obtengo los hijos del nodo actual
     double valor;
 
     for(auto accion = acciones.begin(); accion != acciones.end(); ++accion){
@@ -290,7 +290,6 @@ double AIPlayer::Poda_AlfaBeta(const Parchis &actual, int jugador, int profundid
                     id_piece = accion.getMovedPieceId();
                     dice = accion.getMovedDiceValue();
                 }
-                
             }
             if(alpha >= beta){//Poda
                 return beta;
@@ -327,17 +326,17 @@ double AIPlayer::MiniMax(const Parchis &actual, int jugador, int profundidad, in
         return heuristic(actual, jugador);
     }
 
-    double valor_nodo;
-    bool maximizar = actual.getCurrentPlayerId() == jugador;
-    bool es_raiz = profundidad == 0;
-    ParchisBros acciones = actual.getChildren();
-    if(actual.getCurrentPlayerId() == jugador){
+    double valor_nodo;//Valor del nodo actual
+    bool maximizar = actual.getCurrentPlayerId() == jugador;//Si es el turno del jugador
+    bool es_raiz = profundidad == 0;//Si es la raiz
+    ParchisBros acciones = actual.getChildren();//Acciones posibles
+    if(actual.getCurrentPlayerId() == jugador){//Si es el turno del jugador se busca el maximo
         valor_nodo = menosinf;
-    }else{
+    }else{//Si es el turno del oponente se busca el minimo
         valor_nodo = masinf;
     }
 
-    for(auto accion = acciones.begin(); accion != acciones.end(); ++accion){
+    for(auto accion = acciones.begin(); accion != acciones.end(); ++accion){//Recorremos las acciones
         
         double valor = MiniMax(*accion, jugador, profundidad+1, profundidad_max, c_piece, id_piece, dice, heuristic);
         if(maximizar){//MAX
@@ -365,7 +364,7 @@ double AIPlayer::MiniMax(const Parchis &actual, int jugador, int profundidad, in
         }
     }
 
-    return valor_nodo;
+    return valor_nodo;//Devolvemos el valor del nodo maximo o minimo segun el turno
 }
 
 double AIPlayer::ValoracionTest(const Parchis &estado, int jugador)
@@ -902,7 +901,7 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
     }
 }
 
-int recorrerFichas(const Parchis &estado, const vector<color> &fichas, const pair<color, int> &ficha_comida, int &ficha_adelantada, vector<int> &distancias_al_cuadrado){
+int recorrerFichas(const Parchis &estado, const vector<color> &fichas, const pair<color, int> &ficha_comida, int &ficha_adelantada, vector<unsigned int> &distancias_al_cuadrado){
     int puntuacion_jugador = 0;
     // Recorro colores de mi jugador.
     for (int i = 0; i < fichas.size(); i++){
@@ -1043,7 +1042,7 @@ double AIPlayer::MiValoracion4(const Parchis &estado, int jugador){
         // Recorro todas las fichas de mi jugador
         int puntuacion_jugador = 0;
         int mi_ficha_mas_adelantada = 0;
-        vector<int> distancias_color = {0,0};
+        vector<unsigned int> distancias_color = {0,0};
 
         puntuacion_jugador += recorrerFichas(estado, my_colors, piezaComida, mi_ficha_mas_adelantada, distancias_color);
 
