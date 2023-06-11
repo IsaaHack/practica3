@@ -902,7 +902,7 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
     }
 }
 
-int recorrerFichas(const Parchis &estado, const vector<color> &fichas, const pair<color, int> &ficha_comida, int &ficha_adelantada, int *distancias_al_cuadrado){
+int recorrerFichas(const Parchis &estado, const vector<color> &fichas, const pair<color, int> &ficha_comida, int &ficha_adelantada, vector<int> &distancias_al_cuadrado){
     int puntuacion_jugador = 0;
     // Recorro colores de mi jugador.
     for (int i = 0; i < fichas.size(); i++){
@@ -910,12 +910,15 @@ int recorrerFichas(const Parchis &estado, const vector<color> &fichas, const pai
         // Recorro las fichas de ese color.
         for (int j = 0; j < num_pieces; j++){
 
-            auto box = estado.getBoard().getPiece(c, j).get_box();//Casilla en la que esta la ficha
-            if(box.type == home){//Esta en casa
+            auto ficha = estado.getBoard().getPiece(c, j);//Ficha
+            auto box = ficha.get_box();//Casilla en la que esta la ficha
+            auto type = box.type;//Tipo de casilla en la que esta la ficha
+
+            if(type == home){//Esta en casa
                 puntuacion_jugador -= 20;
-            }else if(box.type == final_queue){//Esta en la cola final
+            }else if(type == final_queue){//Esta en la cola final
                 puntuacion_jugador += 10;
-            }else if(box.type == goal){//Esta en la meta
+            }else if(type == goal){//Esta en la meta
                 puntuacion_jugador += 20;
             }
 
@@ -924,6 +927,19 @@ int recorrerFichas(const Parchis &estado, const vector<color> &fichas, const pai
             }
 
             if(estado.isWall(box)){//Esta haciendo barrera
+                puntuacion_jugador += 5;
+            }else{//Compruebo si hay fichas del mismo color en la misma casilla
+                auto estadoBox = estado.boxState(box);
+                if(estadoBox.size() > 1){//Hay mas de una ficha en la casilla
+                    for(auto it = estadoBox.begin(); it != estadoBox.end(); ++it){
+                        if(it->first == c && it->second != j){//Hay fichas del mismo color en la misma casilla
+                            puntuacion_jugador += 2;
+                        }
+                    }
+                }
+            }
+
+            if(estado.isMegaWall(box) && type == normal){//Esta haciendo barrera grande
                 puntuacion_jugador += 2;
             }
 
@@ -1027,7 +1043,7 @@ double AIPlayer::MiValoracion4(const Parchis &estado, int jugador){
         // Recorro todas las fichas de mi jugador
         int puntuacion_jugador = 0;
         int mi_ficha_mas_adelantada = 0;
-        int distancias_color[2] = {0,0};
+        vector<int> distancias_color = {0,0};
 
         puntuacion_jugador += recorrerFichas(estado, my_colors, piezaComida, mi_ficha_mas_adelantada, distancias_color);
 
@@ -1041,7 +1057,7 @@ double AIPlayer::MiValoracion4(const Parchis &estado, int jugador){
         // Recorro todas las fichas del oponente
         int puntuacion_oponente = 0;
         int op_ficha_mas_adelantada = 0;
-        distancias_color[0] = distancias_color[1] = 0;
+        distancias_color = {0,0};
 
         puntuacion_oponente += recorrerFichas(estado, op_colors, piezaComida, op_ficha_mas_adelantada, distancias_color);
 
